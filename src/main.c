@@ -6,6 +6,7 @@
 #include <avr/sleep.h>
 #include <avr/eeprom.h>
 #include "usiTwiSlave.h"
+#include "uart.h"
 
 #define USI_SCK PA4
 #define USI_MISO PA5
@@ -322,6 +323,7 @@ uint8_t isLightNotCalibrated() {
 //-----------------------------------------------------------------
 
 int main (void) {
+	uinit();
 	setupGPIO();
 
 	uint8_t address = eeprom_read_byte((uint8_t*)0x01);
@@ -352,6 +354,8 @@ int main (void) {
         _delay_ms(300);
     }
     chirp(2);
+
+    uprintf("Plant watering alarm\n");
 
     if(usiTwiDataInReceiveBuffer()){
 		loopSensorMode();
