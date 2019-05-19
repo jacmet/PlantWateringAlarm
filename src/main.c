@@ -351,6 +351,7 @@ uint32_t secondsAfterWatering = 0;
  * Sets wake up interval to 8s
  **/
 void inline wakeUpInterval8s() {
+    uprintf("wakeup 8\n");
     WDTCSR &= ~_BV(WDP1);
     WDTCSR &= ~_BV(WDP2);
     WDTCSR |= _BV(WDP3) | _BV(WDP0); //every 8 sec
@@ -361,6 +362,7 @@ void inline wakeUpInterval8s() {
  * Sets wake up interval to 1s
  **/
 void inline wakeUpInterval1s() {
+    uprintf("wakeup 1\n");
     WDTCSR &= ~_BV(WDP3);
     WDTCSR &= ~_BV(WDP0);
     WDTCSR |= _BV(WDP1) | _BV(WDP2); //every 1 sec
@@ -446,6 +448,7 @@ int main (void) {
 
     while(1) {
         if(wakeUpCount < maxSleepTimes) {
+            uprintf("wakup: %u, maxsleep %u, sleeping again\n", wakeUpCount, maxSleepTimes);
             sleep();
             wakeUpCount++;
         } else {
@@ -455,6 +458,8 @@ int main (void) {
             lastCapacitance = currCapacitance;
             currCapacitance = getCapacitance();
             capacitanceDiff = referenceCapacitance - currCapacitance;
+
+            uprintf("State: %u, Ref: %u, Cap: %u, diff: %d\n", state, referenceCapacitance, currCapacitance, capacitanceDiff);
             oregon_send(get_vcc() > 3000, get_temp(), capacitance_to_humidity(capacitanceDiff));
 
             if (!playedHappy && ((int16_t)lastCapacitance - (int16_t)currCapacitance) < -5 && lastCapacitance !=0) {
