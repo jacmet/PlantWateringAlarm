@@ -193,6 +193,28 @@ static uint16_t get_vcc(void) {
         return 0;
 }
 
+#define TEMP_OFFSET 11
+
+// get temperature in degrees celcius using internal temperature sensor
+static int get_temp(void) {
+    PRR &= ~_BV(PRADC);  //enable ADC in power reduction
+    ADCSRA |= _BV(ADPS2) | //adc clock speed = sysclk/16
+		_BV(ADIE) | _BV(ADEN);
+    ADMUX = _BV(REFS1) | _BV(MUX5) | _BV(MUX1);
+
+    _delay_ms(2); // Wait for Vref to settle
+
+    ADCSRA |= _BV(ADSC); // Start conversion
+    loop_until_bit_is_clear(ADCSRA, ADSC);
+
+    int adc = ADC;
+
+    ADCSRA &=~ _BV(ADEN);
+    PRR |= _BV(PRADC);
+
+	return adc - 273 - TEMP_OFFSET;
+}
+
 //--------------------- light measurement --------------------
 
 volatile uint16_t lightCounter = 0;
