@@ -7,6 +7,7 @@
 #include <avr/eeprom.h>
 #include "usiTwiSlave.h"
 #include "uart.h"
+#include "oregon.h"
 
 #define USI_SCK PA4
 #define USI_MISO PA5
@@ -215,6 +216,21 @@ static int get_temp(void) {
 	return adc - 273 - TEMP_OFFSET;
 }
 
+#define MAX_DIFF 16
+static int capacitance_to_humidity(int16_t diff)
+{
+    if (diff >= 0)
+        return 100;
+
+    diff = -diff;
+    if (diff > MAX_DIFF)
+        return 0;
+
+    diff = MAX_DIFF - diff;
+
+    return (diff * 100) / MAX_DIFF;
+}
+
 //--------------------- light measurement --------------------
 
 volatile uint16_t lightCounter = 0;
@@ -417,6 +433,8 @@ int main (void) {
 
     initWatchdog();
 
+    oregon_init(eeprom_read_byte((uint8_t*)0x04));
+
     uint8_t wakeUpCount = 0;
     uint8_t playedHappy = 0;
     
@@ -437,7 +455,8 @@ int main (void) {
             lastCapacitance = currCapacitance;
             currCapacitance = getCapacitance();
             capacitanceDiff = referenceCapacitance - currCapacitance;
-            
+            oregon_send(get_vcc() > 3000, get_temp(), capacitance_to_humidity(capacitanceDiff));
+
             if (!playedHappy && ((int16_t)lastCapacitance - (int16_t)currCapacitance) < -5 && lastCapacitance !=0) {
                 chirp(9);
                 _delay_ms(350);
