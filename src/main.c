@@ -132,7 +132,7 @@ void stopExcitationSignal() {
 uint16_t getADC1() {
     ADCSRA |= _BV(ADPS2); //adc clock speed = sysclk/16
     ADCSRA |= _BV(ADIE);
-    ADMUX |= _BV(MUX0); //select ADC1 as input
+    ADMUX = _BV(MUX0); //select ADC1 as input
     
     ADCSRA |= _BV(ADSC); //start conversion
     
@@ -165,6 +165,32 @@ uint16_t getCapacitance() {
     PRR |= _BV(PRADC);
 
     return result;
+}
+
+// get supply voltage in milli-volt
+static uint16_t get_vcc(void) {
+    // Read 1.1V reference against AVcc
+    // set the reference to Vcc and the measurement to the internal 1.1V reference
+
+    PRR &= ~_BV(PRADC);  //enable ADC in power reduction
+    ADCSRA |= _BV(ADPS2) | //adc clock speed = sysclk/16
+		_BV(ADIE) | _BV(ADEN);
+    ADMUX = _BV(MUX5) | _BV(MUX0);
+
+    _delay_ms(2); // Wait for Vref to settle
+
+    ADCSRA |= _BV(ADSC); // Start conversion
+    loop_until_bit_is_clear(ADCSRA, ADSC);
+
+    uint16_t adc = ADC;
+
+    ADCSRA &=~ _BV(ADEN);
+    PRR |= _BV(PRADC);
+
+    if (adc)
+        return (1100L * 1023) / adc;
+    else
+        return 0;
 }
 
 //--------------------- light measurement --------------------
